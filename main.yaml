@@ -1,0 +1,38 @@
+---
+- name: Read and Process CSV File on Localhost with Port Splitting
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    csv_file_path: "test4.csv"  # Update this to your actual CSV file path
+  
+  tasks:
+    - name: Check if CSV file exists
+      stat:
+        path: "{{ csv_file_path }}"
+      register: csv_file_stat
+  
+    - name: Fail if CSV file doesn't exist
+      fail:
+        msg: "CSV file not found at {{ csv_file_path }}"
+      when: not csv_file_stat.stat.exists
+  
+    - name: Read CSV file
+      community.general.read_csv:
+        path: "{{ csv_file_path }}"
+        delimiter: ","
+      register: csv_data
+    
+    - name: Convert IP string to list and split port values
+      set_fact:
+        processed_data: "{{ processed_data | default([]) + [item | combine({'ip': item.ip.splitlines() | map('trim') | list, 'port': item.port.split(',') | map('trim') | map('int') | list})] }}"
+      loop: "{{ csv_data.list }}"
+    
+    - name: Display processed data with IP as list and split ports
+      debug:
+        msg: "{{ processed_data }}"
+    
+    - name: Process each row with IP list and split ports
+      debug:
+        msg: "Processing IPs: {{ item.ip }} with Ports: {{ item.port }} using Protocol: {{ item.protocol }}"
+      loop: "{{ processed_data }}"
