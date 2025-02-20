@@ -4,7 +4,7 @@
   connection: local
   gather_facts: false
   vars:
-    csv_file_path: "test4.csv"  # Update this to your actual CSV file path
+    csv_file_path: "test5.csv"  # Update this to your actual CSV file path
   
   tasks:
     - name: Check if CSV file exists
@@ -16,23 +16,33 @@
       fail:
         msg: "CSV file not found at {{ csv_file_path }}"
       when: not csv_file_stat.stat.exists
-  
+
     - name: Read CSV file
       community.general.read_csv:
         path: "{{ csv_file_path }}"
         delimiter: ","
       register: csv_data
-    
-    - name: Convert IP string to list and split port values
+
+    - name: Debug - Show CSV content
+      debug:
+        msg: "{{ csv_data.list }}"
+
+    - name: Convert IP string to list
       set_fact:
-        processed_data: "{{ processed_data | default([]) + [item | combine({'ip': item.ip.splitlines() | map('trim') | list, 'port': item.port.split(',') | map('trim') | map('int') | list})] }}"
+        processed_data: "{{ processed_data | default([]) + 
+          [item | combine({
+            'svc ip iface': (item['svc ip iface'] | default('')).splitlines() | map('trim') | list, 
+            'mgmt ip iface': (item['mgmt ip iface'] | default('')).splitlines() | map('trim') | list
+          })] }}"
       loop: "{{ csv_data.list }}"
-    
-    - name: Display processed data with IP as list and split ports
+      when: "'svc ip iface' in item and 'mgmt ip iface' in item"
+
+    - name: Debug - Display processed data
       debug:
         msg: "{{ processed_data }}"
-    
-    - name: Process each row with IP list and split ports
+
+    - name: Process each row with split IPs
       debug:
-        msg: "Processing IPs: {{ item.ip }} with Ports: {{ item.port }} using Protocol: {{ item.protocol }}"
+        msg: >-
+          Processing Entry: {{ item | to_nice_json }}
       loop: "{{ processed_data }}"
