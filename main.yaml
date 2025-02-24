@@ -1,17 +1,17 @@
 ---
-- name: Read and Process CSV File on Localhost with Port Splitting
+- name: Read and Process CSV File on Localhost
   hosts: localhost
   connection: local
   gather_facts: false
   vars:
-    csv_file_path: "test5.csv"  # Update this to your actual CSV file path
-  
+    csv_file_path: "test7.csv"  # Update this to your actual CSV file path
+
   tasks:
     - name: Check if CSV file exists
       stat:
         path: "{{ csv_file_path }}"
       register: csv_file_stat
-  
+
     - name: Fail if CSV file doesn't exist
       fail:
         msg: "CSV file not found at {{ csv_file_path }}"
@@ -23,26 +23,30 @@
         delimiter: ","
       register: csv_data
 
-    - name: Debug - Show CSV content
-      debug:
-        msg: "{{ csv_data.list }}"
-
-    - name: Convert IP string to list
+    - name: Convert IP string and Port string to lists
       set_fact:
         processed_data: "{{ processed_data | default([]) + 
           [item | combine({
-            'svc ip iface': (item['svc ip iface'] | default('')).splitlines() | map('trim') | list, 
-            'mgmt ip iface': (item['mgmt ip iface'] | default('')).splitlines() | map('trim') | list
+            'dst_ip': (item['dst_ip'] | default('')).splitlines() | map('trim') | list,
+            'TCP': item['TCP'] | default('') | split(', ') | map('split', '/') | list
           })] }}"
       loop: "{{ csv_data.list }}"
-      when: "'svc ip iface' in item and 'mgmt ip iface' in item"
 
     - name: Debug - Display processed data
       debug:
         msg: "{{ processed_data }}"
 
-    - name: Process each row with split IPs
+    - name: Process each row with structured data
       debug:
         msg: >-
-          Processing Entry: {{ item | to_nice_json }}
+          Processing Entry:
+          Source: {{ item.src_ip }} ({{ item.SRC }})
+          Destination: {{ item.dst_ip }} ({{ item.DST }})
+          Allowed TCP Ports: {{ item.TCP }}
+          UDP: {{ item.UDP }}
+          ICMP Allowed: {{ item.ICMP }}
+          Objective: {{ item.Objective }}
+          Remark: {{ item.Remark }}
       loop: "{{ processed_data }}"
+
+
