@@ -33,15 +33,30 @@
           })] }}"
       loop: "{{ csv_data.list }}"
 
-
-    - name: Access src_ip and assign each IP to a variable
-      set_fact:
-        src_ips: "{{ src_ips | default([]) + item['src_ip'] }}"
-      loop: "{{ processed_data }}"
-
-    - name: Print src_ips
+    - name: Display processed data by dst_ip and TCP
       debug:
-        msg: "{{ src_ips }}"
+        msg: "{{ formatted_output }}"
+      vars:
+        formatted_output: |
+          {% for item in processed_data %}
+            {% for x in item.src_ip %}
+              {% for y in item.dst_ip %}
+                {% for z in item.TCP %}
+                  SRC_IP : {{ x }} DST_IP: {{ y }} PORT: {{  z }}
+                {% endfor %}
+              {% endfor %}
+            {% endfor %}
+          {% endfor %}
 
 
+
+
+
+
+
+
+
+
+
+  
 
