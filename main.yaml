@@ -27,26 +27,21 @@
       set_fact:
         processed_data: "{{ processed_data | default([]) + 
           [item | combine({
-            'dst_ip': (item['dst_ip'] | default('')).splitlines() | map('trim') | list,
+            'dst_ip': (item['dst_ip'] | default('')).split(',') | map('trim') | list,
+            'src_ip': (item['src_ip'] | default('')).split(',') | map('trim') | list,
             'TCP': item['TCP'] | default('') | split(', ') | map('split', '/') | list
           })] }}"
       loop: "{{ csv_data.list }}"
 
-    - name: Debug - Display processed data
-      debug:
-        msg: "{{ processed_data }}"
 
-    - name: Process each row with structured data
-      debug:
-        msg: >-
-          Processing Entry:
-          Source: {{ item.src_ip }} ({{ item.SRC }})
-          Destination: {{ item.dst_ip }} ({{ item.DST }})
-          Allowed TCP Ports: {{ item.TCP }}
-          UDP: {{ item.UDP }}
-          ICMP Allowed: {{ item.ICMP }}
-          Objective: {{ item.Objective }}
-          Remark: {{ item.Remark }}
+    - name: Access src_ip and assign each IP to a variable
+      set_fact:
+        src_ips: "{{ src_ips | default([]) + item['src_ip'] }}"
       loop: "{{ processed_data }}"
+
+    - name: Print src_ips
+      debug:
+        msg: "{{ src_ips }}"
+
 
 
